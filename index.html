@@ -47,7 +47,35 @@ body>*{position:relative}header,.hero,.panel,.card,.choice{background:linear-gra
 .pf-run-row{display:flex;justify-content:center;margin:20px 0 16px}
 #pfRunSearch{width:min(100%,520px);background:linear-gradient(135deg,#2a8e4a,#52d879);color:#03170b;border:1px solid #8cffaa;font-size:clamp(16px,2.2vw,21px);font-weight:900;letter-spacing:.055em;padding:17px 22px;box-shadow:0 0 22px #26cf6638}
 #pfRunSearch:hover{filter:brightness(1.12);transform:translateY(-1px)}
-</style></head><body><canvas id="matrixRain" aria-hidden="true"></canvas><header><div><div class="logo">◈ PATH<span>FINDER</span></div><div class="tag">PILOT // HÖGSKOLA // DIN FRAMTID</div></div><div class="tag">Sparas lokalt på din enhet</div></header><main>
+</style>
+<style id="pfNeonMenuEffects">
+/* Soft neon glow and occasional light sweep on both main menu grids. */
+#pilotArea #pilotNav button,
+#collegeArea .college-menu-buttons button {
+ position:relative; isolation:isolate; overflow:hidden;
+ transition:transform .24s ease,box-shadow .28s ease,border-color .28s ease,filter .28s ease!important;
+ will-change:transform;
+}
+#pilotArea #pilotNav button {border:1px solid #4caff2!important;box-shadow:0 0 0 1px #62bfff16,0 0 14px #258ff42c,inset 0 1px 0 #ffffff24!important;animation:pfBlueGlow 5s ease-in-out infinite;}
+#collegeArea .college-menu-buttons button {border:1px solid #51c77c!important;box-shadow:0 0 0 1px #70ff9b15,0 0 14px #30dc6c28,inset 0 1px 0 #ffffff20!important;animation:pfGreenGlow 5s ease-in-out infinite;}
+#pilotArea #pilotNav button::after,#collegeArea .college-menu-buttons button::after {
+ content:"";pointer-events:none;position:absolute;z-index:0;inset:-30% auto -30% -80%;width:42%;
+ transform:skewX(-24deg) translateX(0);background:linear-gradient(90deg,transparent,#ffffff00 15%,#ffffff2e 50%,#ffffff00 85%,transparent);
+ animation:pfShimmer 8s ease-in-out infinite;
+}
+#pilotArea #pilotNav button:nth-child(2)::after,#collegeArea .college-menu-buttons button:nth-child(2)::after{animation-delay:1.4s}
+#pilotArea #pilotNav button:nth-child(3)::after,#collegeArea .college-menu-buttons button:nth-child(3)::after{animation-delay:2.8s}
+#pilotArea #pilotNav button:nth-child(4)::after,#collegeArea .college-menu-buttons button:nth-child(4)::after{animation-delay:4.2s}
+#collegeArea .college-menu-buttons button:nth-child(5)::after{animation-delay:5.6s}
+#pilotArea #pilotNav button:hover,#pilotArea #pilotNav button:focus-visible{transform:translateY(-3px);filter:brightness(1.16);box-shadow:0 0 26px #46baff85,inset 0 1px 0 #ffffff40!important;}
+#collegeArea .college-menu-buttons button:hover,#collegeArea .college-menu-buttons button:focus-visible{transform:translateY(-3px);filter:brightness(1.16);box-shadow:0 0 26px #65ff9b80,inset 0 1px 0 #ffffff40!important;}
+#pilotArea #pilotNav button:active,#collegeArea .college-menu-buttons button:active{transform:translateY(0) scale(.99)}
+@keyframes pfBlueGlow{0%,100%{box-shadow:0 0 12px #258ff42c,inset 0 1px 0 #ffffff24}50%{box-shadow:0 0 20px #299eff56,inset 0 1px 0 #ffffff24}}
+@keyframes pfGreenGlow{0%,100%{box-shadow:0 0 12px #30dc6c28,inset 0 1px 0 #ffffff20}50%{box-shadow:0 0 20px #30dc6c53,inset 0 1px 0 #ffffff20}}
+@keyframes pfShimmer{0%,12%{left:-80%;opacity:0}17%{opacity:1}35%{left:140%;opacity:0}100%{left:140%;opacity:0}}
+@media(prefers-reduced-motion:reduce){#pilotArea #pilotNav button,#collegeArea .college-menu-buttons button,#pilotArea #pilotNav button::after,#collegeArea .college-menu-buttons button::after{animation:none!important;transition:none!important}}
+</style>
+</head><body><canvas id="matrixRain" aria-hidden="true"></canvas><header><div><div class="logo">◈ PATH<span>FINDER</span></div><div class="tag">PILOT // HÖGSKOLA // DIN FRAMTID</div></div><div class="tag">Sparas lokalt på din enhet</div></header><main>
 <section id="start" class="hero">
 <h1>Välj din utbildningsväg</h1><p>Två separata delar – en för pilotutbildningar och ekonomi, en för universitet och högskola.</p>
 <div class="grid">
@@ -342,7 +370,7 @@ finderAreaRender();renderFinder();
  const global=document.getElementById('globalComparison');
  const scenario=document.getElementById('savedCalculations');
  const nav=document.createElement('nav');nav.id='pilotNav';nav.setAttribute('aria-label','Pilotdelens meny');
- nav.innerHTML='<button type="button" data-tab="catalog">✈️ Hitta skolor</button><button type="button" data-tab="saved">★ Mina favoriter <span id="pilotFavCount" class="fav-count">0</span></button><button type="button" data-tab="compare">⚖️ Jämför</button><button type="button" data-tab="finance">📊 Ekonomi & kalkyler</button>';
+ nav.innerHTML='<button type="button" data-tab="catalog">Hitta skolor</button><button type="button" data-tab="saved">Mina favoriter <span id="pilotFavCount" class="fav-count">0</span></button><button type="button" data-tab="compare">Jämför</button><button type="button" data-tab="finance">Ekonomi & kalkyler</button>';
  hero.after(nav);
  function pane(id){const e=document.createElement('div');e.className='pilot-pane';e.id='pilotTab_'+id;nav.after(e);return e}
  const finance=pane('finance'),compare=pane('compare'),saved=pane('saved'),browse=pane('catalog');
@@ -508,21 +536,18 @@ pxRender();
  const configs=[
  ['check','Antagningskoll','Se vad dina poäng räcker till'],
  ['explore','Hitta utbildningar','Sök och spara utbildningar'],
- ['saved','Mina utbildningar','Egna listor och favoriter'],
- ['stats','Antagningsstatistik','UHR och historiska gränser'],
- ['subjects','Ämneskatalog','Utforska ämnen och inriktningar'],
- ['tools','Import och verktyg','CSV och egna uppgifter']
+ ['saved','Mina utbildningar','Egna listor och favoriter']
  ];
  const panes={};
  for(const [id,label,description] of configs){const pane=document.createElement('div');pane.className='college-pane';pane.id='collegePane-'+id;pane.hidden=true;pane.innerHTML='<p class="college-intro">'+description+'</p>';root.insertBefore(pane,menu.nextSibling);panes[id]=pane;
  const btn=document.createElement('button');btn.type='button';btn.textContent=label;btn.dataset.collegeTab=id;btn.addEventListener('click',()=>selectCollegeTab(id));menu.querySelector('.college-menu-buttons').appendChild(btn);}
  function move(el,key){if(el)panes[key].appendChild(el)}
- move(finder,'check');move(explorer,'explore');move(stem,'subjects');move(history,'stats');move(uhr,'stats');move(csv,'tools');
+ move(finder,'check');move(explorer,'explore');
  // Preserve existing dynamically created favorites and manually entered education list.
  const fav=document.getElementById('stemFavPanel');move(fav,'saved');
  if(hero){let node=hero;const nodes=[];while(node&&node.parentNode===root){const next=node.nextElementSibling;nodes.push(node);node=next;}for(const el of nodes)move(el,'saved')}
  // Some earlier scripts inserted a favorite section directly before the STEM catalog.
- for(const el of Array.from(root.children)){if(el===menu||el.classList?.contains('college-pane'))continue;if(el.id==='stemFavPanel'||/sparade högskoleutbildningar/i.test(el.textContent?.slice(0,100)||''))move(el,'saved');else move(el,'tools')}
+ for(const el of Array.from(root.children)){if(el===menu||el.classList?.contains('college-pane'))continue;if(el.id==='stemFavPanel'||/sparade högskoleutbildningar/i.test(el.textContent?.slice(0,100)||''))move(el,'saved');else el.hidden=true}
  window.selectCollegeTab=function(id){if(!panes[id])id='check';for(const [key,pane] of Object.entries(panes))pane.hidden=key!==id;for(const btn of menu.querySelectorAll('button')){const active=btn.dataset.collegeTab===id;btn.classList.toggle('active',active);btn.setAttribute('aria-pressed',String(active));}try{sessionStorage.setItem('pathfinder_college_tab',id)}catch{}if(id==='explore'&&typeof pxRender==='function')pxRender();window.scrollTo({top:0,behavior:'instant'});};
  let initial='check';try{initial=sessionStorage.getItem('pathfinder_college_tab')||'check'}catch{}selectCollegeTab(initial);
 })();
@@ -778,8 +803,8 @@ const pilotNav=document.getElementById('pilotNav'),collegeNav=college?.querySele
 if(!pilot||!college||!pilotNav||!collegeNav)return;
 function landing(title,description){const el=document.createElement('section');el.className='pf-landing';el.innerHTML='<h2>'+title+'</h2><p>'+description+'</p>';return el}
 const pIntro=landing('PILOT // VÄLJ MENY','Välj vad du vill göra. Endast den valda delen öppnas.');
-const cIntro=landing('HÖGSKOLA // VÄLJ MENY','Välj en funktion för att komma vidare.');
-pilotNav.after(pIntro);collegeNav.after(cIntro);
+const cIntro=null;
+pilotNav.after(pIntro);
 function home(area){area.classList.add('pf-menu-home');if(area===pilot){pilot.querySelectorAll('.pilot-pane').forEach(e=>e.classList.remove('active'));pilotNav.querySelectorAll('button').forEach(b=>{b.classList.remove('active');b.setAttribute('aria-pressed','false')})}else{college.querySelectorAll('.college-pane').forEach(e=>e.hidden=true);collegeNav.querySelectorAll('button').forEach(b=>{b.classList.remove('active');b.setAttribute('aria-pressed','false')})}}
 const oldPilotTab=window.pilotTab;
 if(typeof oldPilotTab==='function')window.pilotTab=function(tab){pilot.classList.remove('pf-menu-home');oldPilotTab(tab)};
@@ -1103,5 +1128,63 @@ renderSaved();enhance();
     });
   }
   empty();
+})();
+</script>
+<style>
+/* Pathfinder 24: saved courses directly on the Högskola landing screen. */
+#collegeArea .pf-landing{ text-align:left; }
+#collegeArea .pf-landing > h2,#collegeArea .pf-landing > p{display:none}
+#collegeArea .pf-landing #pfSavedHub{margin:0;border:0;background:transparent;box-shadow:none;padding:4px}
+#collegeArea .pf-landing #pfSavedHub h2{font-size:clamp(19px,2.5vw,26px);margin-bottom:12px}
+#collegeArea .pf-landing #pfSavedHub > p{display:none}
+#collegeArea .pf-landing #pfSavedList{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,310px),1fr));gap:12px}
+#collegeArea .pf-landing #pfSavedList .pf-saved-card{margin:0;text-align:left}
+#collegeArea .pf-landing #pfSavedList .empty{grid-column:1/-1;text-align:center;padding:12px}
+</style>
+<script>
+/* Keep a single live favorites list, shown on the Högskola home and in its own menu. */
+(function(){
+ const area=document.getElementById('collegeArea');
+ const landing=area?.querySelector('.pf-landing');
+ const pane=document.getElementById('collegePane-saved');
+ const hub=document.getElementById('pfSavedHub');
+ if(!area||!landing||!pane||!hub)return;
+ function position(){
+   const destination=area.classList.contains('pf-menu-home')?landing:pane;
+   if(hub.parentElement!==destination)destination.appendChild(hub);
+ }
+ position();
+ const observer=new MutationObserver(position);
+ observer.observe(area,{attributes:true,attributeFilter:['class']});
+ const previousTab=window.selectCollegeTab;
+ if(typeof previousTab==='function')window.selectCollegeTab=function(...args){const result=previousTab.apply(this,args);position();return result};
+ const previousShow=window.showArea;
+ if(typeof previousShow==='function')window.showArea=function(...args){const result=previousShow.apply(this,args);position();return result};
+})();
+</script>
+<style>
+#collegePane-unis{margin-top:0}#pfUniSearch{max-width:520px;margin:8px 0 15px}
+.pf-uni-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(235px,1fr));gap:10px}
+.pf-uni-card{display:flex;align-items:center;gap:11px;background:#092719;border:1px solid #286b47;border-radius:12px;padding:13px;text-decoration:none;color:#c6ffdb;min-height:78px;transition:background .15s,border-color .15s}
+.pf-uni-card:hover,.pf-uni-card:focus-visible{background:#165c37;border-color:#84ffae;outline:none}
+.pf-uni-icon{display:grid;place-items:center;flex:0 0 42px;height:42px;border:1px solid #55a977;background:#14462e;border-radius:10px;font-size:21px;font-weight:900;color:#9bffbb}
+.pf-uni-name{font-weight:750;line-height:1.35}.pf-uni-url{font-size:11px;color:#a2c7ad;margin-top:3px;overflow-wrap:anywhere}
+#collegeArea .college-menu-buttons{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:650px){#collegeArea .college-menu-buttons{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style><script>
+(function(){
+const menu=document.querySelector('#collegeArea .college-menu');if(!menu)return;
+const schools=[["Akademi för Ledarskap och Teologi", "https://www.studera.nu/att-valja-utbildning/adresser/uoh/", true], ["Beckmans designhögskola", "https://www.studera.nu/att-valja-utbildning/adresser/uoh/", true], ["Blekinge tekniska högskola", "https://bth.se", false], ["Brunnsviks enskilda musikhögskola", "https://www.studera.nu/att-valja-utbildning/adresser/uoh/", true], ["Chalmers tekniska högskola", "https://chalmers.se", false], ["Enskilda Högskolan Stockholm", "https://ehs.se", false], ["Försvarshögskolan", "https://fhs.se", false], ["Gammelkroppa skogsskola", "https://www.studera.nu/att-valja-utbildning/adresser/uoh/", true], ["Gymnastik- och idrottshögskolan", "https://gih.se", false], ["Göteborgs universitet", "https://gu.se", false], ["Handelshögskolan i Stockholm", "https://hhs.se", false], ["Högskolan i Borås", "https://hb.se", false], ["Högskolan Dalarna", "https://du.se", false], ["Högskolan i Gävle", "https://hig.se", false], ["Högskolan i Halmstad", "https://hh.se", false], ["Högskolan Kristianstad", "https://hkr.se", false], ["Högskolan i Skövde", "https://his.se", false], ["Högskolan Väst", "https://hv.se", false], ["Johannelunds teologiska högskola", "https://johannelund.nu", false], ["Jönköping University", "https://hj.se", false], ["Karlstads universitet", "https://kau.se", false], ["Karolinska Institutet", "https://ki.se", false], ["Konstfack", "https://konstfack.se", false], ["Kungl. Konsthögskolan", "https://kkh.se", false], ["Kungl. Musikhögskolan", "https://kmh.se", false], ["Kungliga Tekniska högskolan (KTH)", "https://kth.se", false], ["Linköpings universitet", "https://liu.se", false], ["Linnéuniversitetet", "https://lnu.se", false], ["Luleå tekniska universitet", "https://ltu.se", false], ["Lunds universitet", "https://lu.se", false], ["Malmö universitet", "https://mau.se", false], ["Marie Cederschiöld högskola", "https://mchs.se", false], ["Mittuniversitetet", "https://miun.se", false], ["Mälardalens universitet", "https://mdu.se", false], ["Newmaninstitutet", "https://newman.se", false], ["Röda Korsets Högskola", "https://rkh.se", false], ["Sankt Ignatios högskola", "https://sanktignatios.org", false], ["Sophiahemmet Högskola", "https://sophiahemmethogskola.se", false], ["Stockholms universitet", "https://su.se", false], ["Stockholms konstnärliga högskola", "https://uniarts.se", false], ["Södertörns högskola", "https://sh.se", false], ["Sveriges lantbruksuniversitet (SLU)", "https://slu.se", false], ["Umeå universitet", "https://umu.se", false], ["Uppsala universitet", "https://uu.se", false], ["Örebro universitet", "https://oru.se", false], ["Stockholms Musikpedagogiska Institut", "https://www.studera.nu/att-valja-utbildning/adresser/uoh/", true], ["Ericastiftelsen", "https://www.studera.nu/att-valja-utbildning/adresser/uoh/", true], ["Svenska Institutet för Kognitiv Psykoterapi", "https://www.studera.nu/att-valja-utbildning/adresser/uoh/", true]];
+const pane=document.createElement('section');pane.className='college-pane';pane.id='collegePane-unis';pane.hidden=true;
+pane.innerHTML='<div class="panel"><div class="matrix-label">PATHFINDER // HÖGSKOLOR</div><h2>Universitet och högskolor</h2><p class="muted">Öppna lärosätets officiella webbplats. Sök på namn för att hitta rätt.</p><input type="search" id="pfUniSearch" placeholder="Sök universitet eller högskola…" aria-label="Sök universitet eller högskola"><p id="pfUniCount" class="muted"></p><div class="pf-uni-grid" id="pfUniGrid"></div></div>';
+menu.after(pane);
+const btn=document.createElement('button');btn.type='button';btn.dataset.collegeTab='unis';btn.textContent='Högskolor';menu.querySelector('.college-menu-buttons').appendChild(btn);
+const escapeHtml=x=>String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function render(){const q=document.getElementById('pfUniSearch').value.trim().toLocaleLowerCase('sv');const shown=schools.filter(s=>s[0].toLocaleLowerCase('sv').includes(q));document.getElementById('pfUniCount').textContent=shown.length+' lärosäten';document.getElementById('pfUniGrid').innerHTML=shown.map(s=>'<a class="pf-uni-card" href="'+escapeHtml(s[1])+'" target="_blank" rel="noopener noreferrer" aria-label="Öppna '+escapeHtml(s[0])+'"><span class="pf-uni-icon" aria-hidden="true">↗</span><span><span class="pf-uni-name">'+escapeHtml(s[0])+'</span><div class="pf-uni-url">'+(s[2]?'Visa i Studera.nu:s katalog':escapeHtml(new URL(s[1]).hostname))+'</div></span></a>').join('')||'<p>Inga träffar.</p>'}
+pane.querySelector('#pfUniSearch').addEventListener('input',render);render();
+const original=window.selectCollegeTab;
+window.selectCollegeTab=function(id){if(id==='unis'){document.querySelectorAll('#collegeArea .college-pane').forEach(p=>p.hidden=p!==pane);menu.querySelectorAll('button[data-college-tab]').forEach(b=>{const active=b===btn;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active))});try{sessionStorage.setItem('pathfinder_college_tab','unis')}catch{};return;}pane.hidden=true;original(id)};
+btn.addEventListener('click',()=>window.selectCollegeTab('unis'));
+try{if(sessionStorage.getItem('pathfinder_college_tab')==='unis')window.selectCollegeTab('unis')}catch{}
 })();
 </script></body></html>
