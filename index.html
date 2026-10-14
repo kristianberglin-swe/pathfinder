@@ -606,7 +606,7 @@ const pfEsc=x=>esc(String(x??''));
 const pfNum=x=>typeof x==='number'&&Number.isFinite(x)?x:null;
 const pfTermOrder=t=>{const m=String(t||'').match(/(HT|VT|ST)\s*(\d{4})/i);return m?Number(m[2])*10+({VT:1,ST:2,HT:3}[m[1].toUpperCase()]||0):0};
 const pfKey=r=>[String(r.code||'').trim().toLowerCase()||String(r.school||'').trim().toLowerCase()+'|'+String(r.name||'').trim().toLowerCase(),r.term,r.selection].join('|');
-const pfSource=r=>/^https:\/\//.test(String(r.source||''))?'<a href="'+pfEsc(r.source)+'" target="_blank" rel="noopener noreferrer">Visa statistikkälla ↗</a>':pfEsc(r.source||'Källa ej angiven');
+const pfSource=r=>/^https:\/\//.test(String(r.source||''))?'<a href="'+pfEsc(r.source)+'" target="_blank" rel="noopener noreferrer">Visa statistikkälla ↗</a>':pfEsc(r.source||'Källa saknas – kontrollera uppgiften');
 function pfAdmissions(){
  const m=new Map();
  for(const r of [...finderData(),...pfOfficialBI]){
@@ -706,6 +706,80 @@ function pfAdmissions(){
  const count=document.createElement('p');count.id='pfDataCount';count.style.fontSize='12px';count.style.opacity='.8';panel.after(count);
  const oldRender=renderFinder;renderFinder=function(){oldRender();count.textContent='Statistikmotor: '+pfAdmissions().length+' unika statistikposter med minst en antagningsgräns, varav '+pfImportedRows.length+' importerade rader. Saknade BI/BII/HP-värden ersätts aldrig med gissningar.'};
  renderFinder();
+})();
+</script>
+
+<script>
+/* Pathfinder 9 – transparent data quality, export, and strict comparisons. */
+(function(){
+ const finder=document.getElementById('eligibilityFinder');if(!finder)return;
+ const details=document.createElement('details');details.className='panel';details.style.margin='14px 0';
+ details.innerHTML=`<summary style="cursor:pointer;font-weight:800;color:#98ffc0">Datakvalitet och statistikexport</summary>
+ <p>Här ser du vad som faktiskt finns i statistikunderlaget. En angiven webblänk innebär inte att ett värde har dubbelkontrollerats mot UHR. Resultaten är historiska jämförelser, inte antagningsbesked.</p>
+ <div id="pfAudit" aria-live="polite" style="line-height:1.8"></div>
+ <div class="row"><button type="button" id="pfExportCsv" class="secondary">Exportera statistik som CSV</button><button type="button" id="pfShowProblems" class="secondary">Visa poster att granska</button></div>
+ <div id="pfAuditIssues" style="max-height:300px;overflow:auto"></div>
+ <p><small>För att fylla på med fler officiella gränser: sök utbildningen hos <a href="https://www.uhr.se/studier-och-antagning/antagningsstatistik/" target="_blank" rel="noopener">UHR:s antagningsstatistik</a>, exportera eller sammanställ BI/BII/HP och importera med CSV-funktionen ovan.</small></p>`;
+ finder.appendChild(details);
+ const esc9=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const valid=(r,g)=>typeof r[g]==='number'&&Number.isFinite(r[g])&&r[g]>=0&&r[g]<=(g==='hp'?2:22.5);
+ const rows=()=>pfAdmissions();
+ function audit(){const all=rows();const by={BI:0,BII:0,HP:0},sources=new Set(),missing=[],bad=[],terms=new Set();
+  for(const r of all){for(const g of ['bi','bii','hp'])if(valid(r,g))by[g.toUpperCase()]++;
+   if(r.term)terms.add(r.term);
+   if(r.source&&/^https:\/\//i.test(r.source)){try{sources.add(new URL(r.source).hostname)}catch{}}
+   else missing.push(r);
+   if(!/^((HT|VT|ST)\s*20\d{2})$/i.test(String(r.term||''))||![1,2].includes(Number(r.selection))||(!r.code&&(!r.school||!r.name)))bad.push(r);
+  }
+  details.querySelector('#pfAudit').innerHTML=`<strong>${all.length}</strong> unika statistikposter med minst en gräns<br>BI: <strong>${by.BI}</strong> · BII: <strong>${by.BII}</strong> · HP: <strong>${by.HP}</strong><br>${terms.size} terminer · ${sources.size} olika källdomäner<br>${missing.length} poster saknar HTTPS-källänk · ${bad.length} poster behöver kompletterad metadata<br><small>Antalet poster är inte antalet unika utbildningar. Samma utbildning kan förekomma flera terminer.</small>`;
+  return {all,missing,bad};
+ }
+ details.addEventListener('toggle',()=>{if(details.open)audit()});
+ details.querySelector('#pfShowProblems').addEventListener('click',()=>{const {missing,bad}=audit();const issues=[...new Set([...missing,...bad])].slice(0,80);details.querySelector('#pfAuditIssues').innerHTML=issues.length?issues.map(r=>`<p style="margin:6px 0"><strong>${esc9(r.name)}</strong> – ${esc9(r.school)} (${esc9(r.term||'okänd termin')}) ${r.source?'':'· källänk saknas'}</p>`).join(''):'<p>Inga poster med uppenbara metadatafel hittades.</p>'});
+ details.querySelector('#pfExportCsv').addEventListener('click',()=>{const {all}=audit();const headers=['utbildning','lärosäte','anmälningskod','termin','urval','BI','BII','HP','källa','typ'];const val=x=>'"'+String(x??'').replace(/"/g,'""')+'"';const csv=[headers.map(val).join(';'),...all.map(r=>[r.name,r.school,r.code,r.term,r.selection,r.bi,r.bii,r.hp,r.source,r.kind].map(val).join(';'))].join('\r\n');const url=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='pathfinder_statistik_export.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1500)});
+ // Show a plain warning next to the calculator to avoid interpreting historical limits as admission guarantees.
+ const warning=document.createElement('p');warning.style.cssText='font-size:12px;opacity:.85;margin:8px 0';warning.textContent='Observera: Poängjämförelsen avser historiska antagningsgränser. Behörighet, urvalsgrupp och årets konkurrens avgör faktisk antagning. Källänkar är inte liktydiga med oberoende verifiering.';
+ const summary=document.getElementById('finderSummary');if(summary)summary.before(warning);
+})();
+</script>
+<style>
+/* Pathfinder 10: menu-first navigation */
+#start.hero{min-height:calc(100dvh - 155px);display:flex;flex-direction:column;justify-content:center}
+#start>p{max-width:640px;margin:4px 0 12px}
+#pilotArea>.hero{display:none!important}
+#pilotArea #pilotNav,#collegeArea .college-menu{position:static!important;margin:0 0 14px!important;backdrop-filter:none!important}
+#pilotArea #pilotNav{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));padding:12px;gap:10px;overflow:visible}
+#pilotArea #pilotNav button{white-space:normal!important;min-height:66px;font-size:15px!important}
+#collegeArea .college-menu-buttons{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+#collegeArea .college-menu-buttons button{min-height:66px!important;font-size:15px!important}
+#pilotArea .pilot-pane:not(.active){display:none!important}
+#collegeArea .college-pane[hidden]{display:none!important}
+.pf-landing{border:1px solid #2a8152;border-radius:18px;background:linear-gradient(140deg,#041d13,#071d16);padding:22px 20px;margin:0 0 14px;text-align:center}
+.pf-landing h2{margin:0 0 8px!important;font-size:clamp(21px,3vw,30px);color:#a8ffcb}
+.pf-landing p{margin:0;color:#afd3bc}
+#pilotArea.pf-menu-home .pilot-pane,#collegeArea.pf-menu-home .college-pane{display:none!important}
+#pilotArea.pf-menu-home #pilotNav button.active,#collegeArea.pf-menu-home .college-menu button.active{background:#0a2c1b!important;color:#c5ffda!important;box-shadow:none!important}
+#pilotArea:not(.pf-menu-home) .pf-landing,#collegeArea:not(.pf-menu-home) .pf-landing{display:none}
+#pilotArea>.secondary:first-child,#collegeArea>.secondary:first-child{margin-bottom:12px}
+@media(max-width:600px){#start.hero{min-height:unset}#pilotArea #pilotNav button,#collegeArea .college-menu-buttons button{min-height:58px!important;font-size:13px!important} .pf-landing{padding:17px 12px}}
+</style>
+<script>
+(function(){
+const pilot=document.getElementById('pilotArea'),college=document.getElementById('collegeArea');
+const pilotNav=document.getElementById('pilotNav'),collegeNav=college?.querySelector('.college-menu');
+if(!pilot||!college||!pilotNav||!collegeNav)return;
+function landing(title,description){const el=document.createElement('section');el.className='pf-landing';el.innerHTML='<h2>'+title+'</h2><p>'+description+'</p>';return el}
+const pIntro=landing('PILOT // VÄLJ MENY','Välj vad du vill göra. Endast den valda delen öppnas.');
+const cIntro=landing('HÖGSKOLA // VÄLJ MENY','Välj en funktion för att komma vidare.');
+pilotNav.after(pIntro);collegeNav.after(cIntro);
+function home(area){area.classList.add('pf-menu-home');if(area===pilot){pilot.querySelectorAll('.pilot-pane').forEach(e=>e.classList.remove('active'));pilotNav.querySelectorAll('button').forEach(b=>{b.classList.remove('active');b.setAttribute('aria-pressed','false')})}else{college.querySelectorAll('.college-pane').forEach(e=>e.hidden=true);collegeNav.querySelectorAll('button').forEach(b=>{b.classList.remove('active');b.setAttribute('aria-pressed','false')})}}
+const oldPilotTab=window.pilotTab;
+if(typeof oldPilotTab==='function')window.pilotTab=function(tab){pilot.classList.remove('pf-menu-home');oldPilotTab(tab)};
+const oldCollegeTab=window.selectCollegeTab;
+if(typeof oldCollegeTab==='function')window.selectCollegeTab=function(tab){college.classList.remove('pf-menu-home');oldCollegeTab(tab)};
+const oldShow=window.showArea;
+if(typeof oldShow==='function')window.showArea=function(area){oldShow(area);if(area==='pilot')home(pilot);if(area==='college')home(college)};
+home(pilot);home(college);
 })();
 </script>
 </body></html>
