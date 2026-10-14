@@ -710,7 +710,7 @@ function pfParseRows(raw){
  }
  return {data,errors};
 }
-function pfAdmissions(){
+pfAdmissions = function(){
  const original=pfPreviousAdmissions();const map=new Map();
  // Never merge unrelated statistics across sources or overwrite known groups with unknown ones.
  for(const r of [...original,...pfUhr2026.map(x=>({...x,area:finderCategory(x.name)})),...pfImportedRows]){
@@ -1186,5 +1186,75 @@ const original=window.selectCollegeTab;
 window.selectCollegeTab=function(id){if(id==='unis'){document.querySelectorAll('#collegeArea .college-pane').forEach(p=>p.hidden=p!==pane);menu.querySelectorAll('button[data-college-tab]').forEach(b=>{const active=b===btn;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active))});try{sessionStorage.setItem('pathfinder_college_tab','unis')}catch{};return;}pane.hidden=true;original(id)};
 btn.addEventListener('click',()=>window.selectCollegeTab('unis'));
 try{if(sessionStorage.getItem('pathfinder_college_tab')==='unis')window.selectCollegeTab('unis')}catch{}
+})();
+</script><style>
+#pfSearchCoverage{color:#a4cbb3;font-size:13px;margin:6px 0 12px}
+#finderResults .pf-result-info{font-size:12px;color:#a8cdb6}
+</style>
+<script>
+/* Pathfinder 32: compare the latest AVAILABLE threshold separately for BI/BII and HP. */
+(function(){
+ const $=id=>document.getElementById(id);
+ const safe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const num=v=>typeof v==='number'&&Number.isFinite(v)?v:null;
+ const fmt=v=>num(v)===null?'–':v.toFixed(2).replace('.',',');
+ const summary=$('finderSummary'),target=$('finderResults'),pager=$('pfPager'),above=$('pfShowAbove');
+ if(!summary||!target)return;
+ const coverage=document.createElement('div');coverage.id='pfSearchCoverage';summary.after(coverage);
+ const type=$('pfTypeFilter');if(type){type.value='all';}
+ let expanded=false,hasRun=false,page=0,shown=[],matchCount=0,compared=0,metricCount={bi:0,hp:0},grade='bi',merit=null,hp=null;
+ const recordKey=r=>[r.school,r.name].map(x=>String(x||'').trim().toLocaleLowerCase('sv-SE')).join('|');
+ const rank=r=>pfTermOrder(r.term)*10+(Number(r.selection)||0);
+ function isCourse(r){return /kurs/i.test(r.kind||'')&&!/program/i.test(r.kind||'')}
+ function newer(a,b){return !b||rank(a)>b.rank}
+ function validSource(url){try{return new URL(url).protocol==='https:'}catch{return false}}
+ function within(r){return (merit!==null&&r.grade&&merit>=r.grade.value)||(hp!==null&&r.hp&&hp>=r.hp.value)}
+ function draw(){
+  const slice=shown.slice(page*30,page*30+30);
+  target.innerHTML=slice.map(r=>{
+   const ok=within(r),g=r.grade,h=r.hp;
+   const gtxt=g?`${grade.toUpperCase()}: ${fmt(g.value)} (${safe(g.term)}, urval ${safe(g.selection)})`:`${grade.toUpperCase()}: –`;
+   const htxt=h?`HP: ${fmt(h.value)} (${safe(h.term)}, urval ${safe(h.selection)})`:'HP: –';
+   const source=(merit!==null&&g&&merit>=g.value?g:hp!==null&&h&&hp>=h.value?h:g||h);
+   const link=source&&validSource(source.source)?`<a href="${safe(source.source)}" target="_blank" rel="noopener noreferrer">Statistikkälla ↗</a>`:'';
+   const key=safe(r.school+'|'+r.name);
+   return `<div class="data-row"><strong>${safe(r.name)}</strong><div class="muted">${safe(r.school)} · ${isCourse(r.kindRow)?'Kurs':'Program'}</div><div class="row"><span class="source-pill">${gtxt}</span><span class="source-pill">${htxt}</span><span class="${ok?'positive':'negative'}">${ok?'Inom dina poäng':'Över dina poäng'}</span></div><div class="row">${link}<a href="https://www.antagning.se/se/search" target="_blank" rel="noopener noreferrer">Sök på Antagning.se ↗</a><button type="button" class="pf-save-result" data-id="${key}">☆ Spara</button></div></div>`;
+  }).join('')||'<div class="empty">Inga utbildningar med registrerade antagningsgränser matchar dina val. Prova fler ämnen eller visa även utbildningar över dina poäng.</div>';
+  const saved=(()=>{try{return JSON.parse(localStorage.getItem('pathfinder_saved_admissions_v1')||'[]')}catch{return []}})();
+  target.querySelectorAll('.pf-save-result').forEach(b=>{if(saved.some(x=>x.school+'|'+x.name===b.dataset.id)){b.textContent='★ Sparad';b.classList.add('is-saved')}b.addEventListener('click',()=>{if(typeof pfSaveAdmission==='function')pfSaveAdmission(b.dataset.id);});});
+  const pages=Math.ceil(shown.length/30);pager.innerHTML=pages>1?`<button type="button" id="pf32Prev" ${page===0?'disabled':''}>← Föregående</button><span>Sida ${page+1} av ${pages}</span><button type="button" id="pf32Next" ${page>=pages-1?'disabled':''}>Nästa →</button>`:'';
+  $('pf32Prev')?.addEventListener('click',()=>{page--;draw()});$('pf32Next')?.addEventListener('click',()=>{page++;draw()});
+ }
+ function run(scroll=true){
+  try{
+   merit=finderNumber('finderMerit',22.5);hp=finderNumber('finderHp',2);grade=$('pfGradeGroup')?.value||'bi';
+   if(Number.isNaN(merit)||Number.isNaN(hp)){summary.textContent='Kontrollera poängen (merit 0–22,50 och HP 0–2,00).';target.innerHTML='';pager.innerHTML='';return}
+   if(merit===null&&hp===null){summary.textContent='Fyll i meritvärde eller HP-resultat och tryck KÖR.';target.innerHTML='';pager.innerHTML='';coverage.textContent='';return}
+   hasRun=true;page=0;
+   const q=($('finderQuery')?.value||'').trim().toLocaleLowerCase('sv-SE');
+   const term=$('pfTermFilter')?.value||'latest',kind=$('pfTypeFilter')?.value||'all';
+   let rows=pfAdmissions().filter(r=>r&&r.name&&r.school&&r.kind!=='Arkiv'&&(!finderSelected||finderSelected.has(r.area))&&[r.name,r.school,r.code].join(' ').toLocaleLowerCase('sv-SE').includes(q));
+   if(kind==='program')rows=rows.filter(r=>!isCourse(r));
+   if(term!=='latest'&&term!=='all')rows=rows.filter(r=>r.term===term);
+   const grouped=new Map();
+   for(const r of rows){const key=recordKey(r);let item=grouped.get(key);if(!item){item={name:r.name,school:r.school,grade:null,hp:null,kindRow:r};grouped.set(key,item)}
+    if(merit!==null&&num(r[grade])!==null&&newer(r,item.grade))item.grade={value:r[grade],term:r.term,selection:r.selection,source:r.source,rank:rank(r)};
+    if(hp!==null&&num(r.hp)!==null&&newer(r,item.hp))item.hp={value:r.hp,term:r.term,selection:r.selection,source:r.source,rank:rank(r)};
+   }
+   const comparable=[...grouped.values()].filter(r=>r.grade||r.hp);
+   metricCount={bi:comparable.filter(r=>r.grade).length,hp:comparable.filter(r=>r.hp).length};compared=comparable.length;
+   const matched=comparable.filter(within);matchCount=matched.length;
+   shown=(expanded?comparable:matched).sort((a,b)=>Number(within(b))-Number(within(a))||a.name.localeCompare(b.name,'sv-SE'));
+   summary.textContent=expanded?`${matchCount} inom dina poäng · ${shown.length-matchCount} över dina poäng`:`${matchCount} utbildningar inom dina poäng`;
+   coverage.textContent=`${compared} unika utbildningar kan jämföras · ${metricCount.bi} med ${grade.toUpperCase()}-gräns · ${metricCount.hp} med HP-gräns`;
+   if(above){above.style.display=compared?'':'none';above.textContent=expanded?'Visa bara utbildningar inom mina poäng':'Visa även utbildningar över mina poäng'}
+   draw();if(scroll)summary.scrollIntoView({behavior:'smooth',block:'nearest'});
+  }catch(e){console.error('Pathfinder sökfel',e);summary.textContent='Sökningen kunde inte genomföras.';coverage.textContent='';}
+ }
+ window.pfRunFinder=run;
+ window.pfToggleAbove=()=>{expanded=!expanded;if(hasRun)run(false)};
+ $('pfRunSearch')?.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();run()},true);
+ for(const id of ['finderMerit','finderHp','finderQuery'])$(id)?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();e.stopImmediatePropagation();run()}},true);
+ summary.textContent='Ange meritvärde eller HP-resultat och tryck KÖR.';target.innerHTML='';pager.innerHTML='';coverage.textContent='';if(above)above.style.display='none';
 })();
 </script></body></html>
