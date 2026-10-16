@@ -164,7 +164,7 @@ body>*{position:relative}header,.hero,.panel,.card,.choice{background:linear-gra
 <label>Utbildningstyp<select id="yhKindFilter"><option value="">Alla typer</option><option value="Program">Program</option><option value="Kurs">Kurs</option></select></label>
 <label class="yh-check"><input type="checkbox" id="yhFavOnly"> Visa bara favoriter</label>
 </div>
-<div class="yh-search-head"><span id="yhCount"></span><button type="button" id="yhClear" class="yh-clear">Rensa filter</button></div>
+<div class="yh-search-actions"><button type="button" id="yhSearchNow" class="yh-search-now">Sök nu →</button><button type="button" id="yhClear" class="yh-clear">Rensa filter</button></div><div class="yh-search-head"><span id="yhCount"></span></div>
 <div id="yhResults" class="yh-results" aria-live="polite"></div><div id="yhPagination" class="yh-pagination"></div>
 <p class="yh-search-footer">Listan gäller endast YH-program om minst 100 YH-poäng. Ett utbildningskort kan innehålla flera utbildningsomgångar, även redan påbörjade. Den omfattar inte korta YH-kurser. Startår är inte ett bekräftat ansökningsdatum. Kontrollera alltid aktuell status hos utbildningsanordnaren. <a href="https://www.yrkeshogskolan.se/hitta-utbildning/program" target="_blank" rel="noopener noreferrer">Sök i hela det aktuella YH-utbudet ↗</a></p>
 </section>
@@ -2112,9 +2112,13 @@ function renderPage(){
 }
 function apply(){const text=norm(q.value.trim());filtered=groups.filter(g=>(!text||g.search.includes(text))&&(!area.value||g.rows.some(r=>r.area===area.value))&&(!kind.value||g.rows.some(r=>r.kind===kind.value))&&(!favOnly.checked||favs.has(g.code))&&matchingRounds(g).length>0);page=0;renderPage()}
 results.addEventListener('click',e=>{const b=e.target.closest('button[data-yh-code]');if(!b)return;const code=b.dataset.yhCode;if(favs.has(code))favs.delete(code);else favs.add(code);persist();renderPage()});
-for(const el of [q,area,city,distance,kind,favOnly,year])el.addEventListener('input',apply);
-$('yhClear').onclick=()=>{q.value='';area.value='';city.value='';distance.value='';kind.value='';year.value='';favOnly.checked=false;apply()};
-apply();window.pfYh67Stats={rounds:rows.length,uniqueCodes:groups.length};
+let hasSearched=false;
+function clearResults(){filtered=[];page=0;results.innerHTML='';$('yhPagination').innerHTML='';count.textContent='Välj dina filter och klicka på Sök nu för att visa utbildningar.';}
+$('yhSearchNow').onclick=()=>{hasSearched=true;apply();};
+q.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();hasSearched=true;apply();}});
+for(const el of [q,area,city,distance,kind,favOnly,year])el.addEventListener('input',()=>{if(hasSearched)apply()});
+$('yhClear').onclick=()=>{q.value='';area.value='';city.value='';distance.value='';kind.value='';year.value='';favOnly.checked=false;hasSearched=false;clearResults()};
+clearResults();window.pfYh67Stats={rounds:rows.length,uniqueCodes:groups.length};
 })();</script><style>.yh-pagination{display:flex;align-items:center;justify-content:center;gap:18px;padding:18px;color:#ffc6d0}.yh-pagination button{background:#7b263e;border:1px solid #b85b71;color:white;border-radius:8px;padding:9px 13px;cursor:pointer}.yh-pagination button:disabled{opacity:.35;cursor:default}</style><style>
 .yh-result-actions .yh-provider-link{background:transparent;color:#ffb8c7;border:1px solid #a8445d}
 .yh-result-actions .yh-provider-link:hover{background:#482033}
@@ -2165,4 +2169,9 @@ body[data-page="yh"] #yhArea{display:block!important}
  if(location.hash==='#yh')openYh(false);
 })();
 </script>
-</body></html>
+<style id="pf69-yh-search-style">
+.yh-search-actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:20px 0 10px}
+.yh-search-now{background:linear-gradient(120deg,#c72846,#f05268);color:white;border:1px solid #ff8091;border-radius:10px;padding:13px 30px;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 5px 20px #b926473d}
+.yh-search-now:hover,.yh-search-now:focus-visible{background:#e43e5a;box-shadow:0 0 0 3px #e43e5a55}
+.yh-search-head{margin:12px 0!important}
+</style></body></html>
